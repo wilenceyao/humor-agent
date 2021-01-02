@@ -10,12 +10,20 @@ var Config *AgentConfig
 
 type AgentConfig struct {
 	QCloud QCloudConfig
+	Mqtt   MqttConfig
 }
 
 type QCloudConfig struct {
 	SecretId  string
 	SecretKey string
 	TtsConfig QCloudTtsConfig
+}
+
+type MqttConfig struct {
+	Ip       string
+	Port     int
+	Username string
+	Password string
 }
 
 type QCloudTtsConfig struct {

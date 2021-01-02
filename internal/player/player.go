@@ -34,6 +34,11 @@ func Init() error {
 	return nil
 }
 
+func (p *AudioPlayer) Close()  {
+	p.innerPlayer.Close()
+	p.innerCtx.Close()
+}
+
 func (p *AudioPlayer) playCoroutine() {
 	var err error
 	for {
