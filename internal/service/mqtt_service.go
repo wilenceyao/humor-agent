@@ -3,9 +3,11 @@ package service
 import (
 	"fmt"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"github.com/golang/protobuf/proto"
 	"github.com/rs/zerolog/log"
 	"github.com/wilenceyao/humor-agent/api"
 	"github.com/wilenceyao/humor-agent/config"
+	mqttapi "github.com/wilenceyao/humor-api/api/mqtt"
 	"strconv"
 )
 
@@ -46,14 +48,22 @@ func (s *MqttService) onMqttConnectionLost(c mqtt.Client, err error) {
 
 func (s *MqttService) mqttPublishHandler(c mqtt.Client, msg mqtt.Message) {
 	log.Info().Msgf("Received message: %s from topic: %s", msg.Payload(), msg.Topic())
-
-	req := &api.TtsRequest{
-		BaseRequest: api.BaseRequest{
-			TraceID: strconv.FormatUint((uint64)(msg.MessageID()), 10),
-		},
-		Text: string(msg.Payload()),
+	mqttMsg := &mqttapi.Message{}
+	err := proto.Unmarshal(msg.Payload(), mqttMsg)
+	if err != nil {
+		log.Error().Msgf("mqtt msg unmarshal err: %+v", err)
+		return
 	}
-	DefaultTtsService.TextToVoice(req)
+	switch mqttMsg.Action {
+	case mqttapi.Action_TTS:
+		req := &api.TtsRequest{
+			BaseRequest: api.BaseRequest{
+				TraceID: strconv.FormatUint((uint64)(msg.MessageID()), 10),
+			},
+			Text: string(msg.Payload()),
+		}
+		DefaultTtsService.TextToVoice(req)
+	}
 }
 
 func (s *MqttService) mqttConnect(c mqtt.Client) error {
