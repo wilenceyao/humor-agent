@@ -4,7 +4,9 @@ import (
 	"fmt"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/rs/zerolog/log"
+	"github.com/wilenceyao/humor-agent/api"
 	"github.com/wilenceyao/humor-agent/config"
+	"strconv"
 )
 
 var DefaultMqttService *MqttService
@@ -44,6 +46,14 @@ func (s *MqttService) onMqttConnectionLost(c mqtt.Client, err error) {
 
 func (s *MqttService) mqttPublishHandler(c mqtt.Client, msg mqtt.Message) {
 	log.Info().Msgf("Received message: %s from topic: %s", msg.Payload(), msg.Topic())
+
+	req := &api.TtsRequest{
+		BaseRequest: api.BaseRequest{
+			TraceID: strconv.FormatUint((uint64)(msg.MessageID()), 10),
+		},
+		Text: string(msg.Payload()),
+	}
+	DefaultTtsService.TextToVoice(req)
 }
 
 func (s *MqttService) mqttConnect(c mqtt.Client) error {
