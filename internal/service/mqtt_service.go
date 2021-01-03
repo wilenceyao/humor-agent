@@ -8,7 +8,6 @@ import (
 	"github.com/wilenceyao/humor-agent/api"
 	"github.com/wilenceyao/humor-agent/config"
 	mqttapi "github.com/wilenceyao/humor-api/api/mqtt"
-	"strconv"
 )
 
 var DefaultMqttService *MqttService
@@ -56,11 +55,13 @@ func (s *MqttService) mqttPublishHandler(c mqtt.Client, msg mqtt.Message) {
 	}
 	switch mqttMsg.Action {
 	case mqttapi.Action_TTS:
+		ttsPayload := &mqttapi.TtsPayload{}
+		proto.Unmarshal(mqttMsg.Payload, ttsPayload)
 		req := &api.TtsRequest{
 			BaseRequest: api.BaseRequest{
-				TraceID: strconv.FormatUint((uint64)(msg.MessageID()), 10),
+				TraceID: mqttMsg.TraceID,
 			},
-			Text: string(msg.Payload()),
+			Text: ttsPayload.Text,
 		}
 		DefaultTtsService.TextToVoice(req)
 	}
