@@ -1,4 +1,4 @@
-package player
+package service
 
 import (
 	"github.com/hajimehoshi/go-mp3"
@@ -7,7 +7,11 @@ import (
 	"io"
 )
 
-var Player *AudioPlayer
+var DefaultTtsPlayer *TtsPlayer
+
+type TtsPlayer struct {
+	player *AudioPlayer
+}
 
 type Audio struct {
 	R     io.Reader
@@ -20,21 +24,24 @@ type AudioPlayer struct {
 	innerCtx    *oto.Context
 }
 
-func Init() error {
+func InitTtsPlayer() error {
 	ctx, err := oto.NewContext(16000, 2, 2, 8192)
 	if err != nil {
 		return err
 	}
-	Player = &AudioPlayer{
+	player := &AudioPlayer{
 		c:           make(chan Audio, 10),
 		innerCtx:    ctx,
 		innerPlayer: ctx.NewPlayer(),
 	}
-	go Player.playCoroutine()
+	DefaultTtsPlayer = &TtsPlayer{
+		player: player,
+	}
+	go DefaultTtsPlayer.player.playCoroutine()
 	return nil
 }
 
-func (p *AudioPlayer) Close()  {
+func (p *AudioPlayer) Close() {
 	p.innerPlayer.Close()
 	p.innerCtx.Close()
 }
@@ -53,6 +60,8 @@ func (p *AudioPlayer) playCoroutine() {
 		}
 	}
 }
+
+
 func (p *AudioPlayer) Enqueue(a Audio) {
 	p.c <- a
 }

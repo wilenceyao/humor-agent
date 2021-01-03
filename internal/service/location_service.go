@@ -1,4 +1,4 @@
-package location
+package service
 
 import (
 	"errors"
@@ -8,6 +8,11 @@ import (
 	"strings"
 )
 
+var DefaultLocationService *LocationService = &LocationService{}
+
+type LocationService struct {
+}
+
 type Location struct {
 	ExternalIP string
 	Country    string
@@ -15,16 +20,16 @@ type Location struct {
 	City       string
 }
 
-func GetMyLocation() (*Location, error) {
+func (s *LocationService) GetMyLocation() (*Location, error) {
 	res, err := http.Get("https://ip.tool.lu/")
 	if err != nil {
 		return nil, err
 	}
 	defer res.Body.Close()
 	btArr, _ := ioutil.ReadAll(res.Body)
-	s := string(btArr)
+	str := string(btArr)
 	log.Info().Msgf("ip location original res: %s", s)
-	strArr := strings.Split(s, "\n")
+	strArr := strings.Split(str, "\n")
 	// 当前IP: xx.xx.xx.xx
 	// 归属地: 中国 xxx xxx
 

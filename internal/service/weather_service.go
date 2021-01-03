@@ -1,4 +1,4 @@
-package cmasdk
+package service
 
 import (
 	"bytes"
@@ -10,6 +10,13 @@ import (
 	"net/http"
 	"strings"
 )
+
+// 数据来源：国家气象科学数据中心 http://data.cma.cn/
+
+var DefaultWeatherService *WeatherService = &WeatherService{}
+
+type WeatherService struct {
+}
 
 type WeatherLiveData struct {
 	AqiForecast []struct {
@@ -168,7 +175,7 @@ type WeatherLiveResponse struct {
 	} `json:"result"`
 }
 
-type Station struct {
+type WeatherStation struct {
 	CNAME     string
 	V06001    string
 	V05001    string
@@ -176,18 +183,18 @@ type Station struct {
 }
 
 type StationResponse struct {
-	Code   int      `json:"code"`
-	Result *Station `json:"result"`
+	Code   int             `json:"code"`
+	Result *WeatherStation `json:"result"`
 }
 
-func GetWeatherByCity(city string) (*WeatherLiveData, error) {
+func (s *WeatherService) GetWeatherByCity(city string) (*WeatherLiveData, error) {
 	log.Info().Msgf("GetWeatherByCity: %s", city)
 	// 深圳市 -> 深圳
 	index := strings.Index(city, "市")
 	if index > 0 {
 		city = city[0:index]
 	}
-	stat, err := getStationIDByCity(city)
+	stat, err := s.getStationIDByCity(city)
 	if err != nil {
 		return nil, err
 	}
@@ -224,7 +231,7 @@ func GetWeatherByCity(city string) (*WeatherLiveData, error) {
 	return resObj.Result.Data, nil
 }
 
-func getStationIDByCity(city string) (*Station, error) {
+func (s *WeatherService) getStationIDByCity(city string) (*WeatherStation, error) {
 	param := make(map[string]string)
 	param["city"] = city
 	paramBtArr, _ := json.Marshal(param)

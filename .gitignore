@@ -2,3 +2,4 @@
 humor-agent
 *.mp3
 config.json
+humor-agent.log
