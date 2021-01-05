@@ -27,8 +27,8 @@ type QCloudConfig struct {
 }
 
 type MqttConfig struct {
-	Ip       string
-	Port     int
+	IP       string
+	Port     uint
 	Username string
 	Password string
 }
