@@ -14,13 +14,13 @@ type HumorAgent struct {
 
 func (a *HumorAgent) Start() error {
 	var err error
-	a.setupLog()
 	log.Info().Msg("Starting")
 	err = config.Init("config.json")
 	if err != nil {
 		log.Error().Msgf("config init err: %+v", err)
 		return err
 	}
+	a.setupLog()
 	err = service.InitTtsPlayer()
 	if err != nil {
 		log.Error().Msgf("init tts player err: %+v", err)
