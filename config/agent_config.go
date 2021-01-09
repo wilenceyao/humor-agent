@@ -12,7 +12,8 @@ type AgentConfig struct {
 	QCloud QCloudConfig
 	Mqtt   MqttConfig
 	// 本地管控服务
-	Admin AdminConfig
+	Admin   AdminConfig
+	LogFile string
 }
 
 type AdminConfig struct {

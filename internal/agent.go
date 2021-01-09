@@ -42,7 +42,7 @@ func (a *HumorAgent) Start() error {
 
 func (a *HumorAgent) setupLog() {
 	h := &lumberjack.Logger{
-		Filename:   "humor-agent.log",
+		Filename:   config.Config.LogFile,
 		MaxSize:    100,  // megabytes
 		MaxBackups: 10,   // 最多50个日志文件，因而只保留49个旧日志备份
 		MaxAge:     10,   //days
