@@ -6,6 +6,7 @@ import (
 	"github.com/wilenceyao/humor-agent/internal/admin"
 	"github.com/wilenceyao/humor-agent/internal/service"
 	"gopkg.in/natefinch/lumberjack.v2"
+	stdlog "log"
 )
 
 type HumorAgent struct {
@@ -47,5 +48,6 @@ func (a *HumorAgent) setupLog() {
 		MaxAge:     10,   //days
 		Compress:   true, // disabled by default
 	}
+	stdlog.SetOutput(h)
 	log.Logger = log.With().Caller().Logger().Output(h)
 }

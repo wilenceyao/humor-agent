@@ -9,7 +9,6 @@ import (
 var Config *AgentConfig
 
 type AgentConfig struct {
-	ID     string
 	QCloud QCloudConfig
 	Mqtt   MqttConfig
 	// 本地管控服务
@@ -31,6 +30,7 @@ type MqttConfig struct {
 	Port     uint
 	Username string
 	Password string
+	ClientID string
 }
 
 type QCloudTtsConfig struct {

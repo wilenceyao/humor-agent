@@ -5,12 +5,13 @@ import (
 	"encoding/base64"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
-	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common"
+	qcloudcommon "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common"
 	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/errors"
 	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/profile"
 	tts "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/tts/v20190823"
-	"github.com/wilenceyao/humor-agent/api"
 	"github.com/wilenceyao/humor-agent/config"
+	agentapi "github.com/wilenceyao/humor-api/agent/humor"
+	"github.com/wilenceyao/humor-api/common"
 )
 
 var DefaultTtsService *TtsService
@@ -27,7 +28,7 @@ var (
 )
 
 func InitTtsService() {
-	credential := common.NewCredential(
+	credential := qcloudcommon.NewCredential(
 		config.Config.QCloud.SecretId,
 		config.Config.QCloud.SecretKey,
 	)
@@ -39,28 +40,26 @@ func InitTtsService() {
 	}
 }
 
-func (s *TtsService) TextToVoice(req *api.TtsRequest) *api.TtsResponse {
-	res := &api.TtsResponse{
-	}
+func (s *TtsService) TextToVoice(req *agentapi.TtsRequest, res *agentapi.TtsResponse) {
 	request := tts.NewTextToVoiceRequest()
-	request.Text = common.StringPtr(req.Text)
+	request.Text = qcloudcommon.StringPtr(req.Text)
 	request.VoiceType = &config.Config.QCloud.TtsConfig.VoiceType
 	request.ModelType = &modelType
-	request.SessionId = &req.TraceID
+	request.SessionId = &req.Request.RequestID
 	request.Codec = &codec
 	response, err := s.client.TextToVoice(request)
 	if err != nil {
 		if _, ok := err.(*errors.TencentCloudSDKError); ok {
 			log.Error().Msgf("TencentCloudSDKError : %+v", err)
 		}
-		res.Code = api.EXTERNAL_ERROR
-		return res
+		res.Response.Code = common.ErrorCode_EXTERNAL_ERROR
+		return
 	}
 	arr, err := base64.StdEncoding.DecodeString(*response.Response.Audio)
 	if err != nil {
 		log.Error().Msgf("base64 decode err: %+v", err)
-		res.Code = api.INTERNAL_ERROR
-		return res
+		res.Response.Code = common.ErrorCode_INTERNAL_ERROR
+		return
 	}
 	id := uuid.New().String()
 	audio := Audio{
@@ -68,6 +67,4 @@ func (s *TtsService) TextToVoice(req *api.TtsRequest) *api.TtsResponse {
 		Title: id,
 	}
 	DefaultTtsPlayer.player.Enqueue(audio)
-	res.ID = id
-	return res
 }

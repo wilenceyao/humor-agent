@@ -27,6 +27,5 @@ func RunAdminServer() error {
 }
 
 func (s *Server) addApi() {
-	s.router.POST("tts", s.adminService.Tts)
-	s.router.POST("morningNotice", s.adminService.MorningNotice)
+	//s.router.POST("tts", s.adminService.Tts)
 }

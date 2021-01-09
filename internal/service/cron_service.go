@@ -4,7 +4,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/robfig/cron/v3"
 	"github.com/rs/zerolog/log"
-	"github.com/wilenceyao/humor-agent/api"
+	agentapi "github.com/wilenceyao/humor-api/agent/humor"
+	"github.com/wilenceyao/humor-api/common"
 )
 
 var DefaultCronService *CronService
@@ -51,11 +52,14 @@ func (s *CronService) MorningNoticeTask() {
 	buf = append(buf, ","...)
 	buf = append(buf, weather.Condition.Tips...)
 	buf = append(buf, weather.Sfc.Notice...)
-	req := &api.TtsRequest{
+	req := &agentapi.TtsRequest{
 		Text: string(buf),
-		BaseRequest: api.BaseRequest{
-			TraceID: uuid.New().String(),
+		Request: &common.BaseRequest{
+			RequestID: uuid.New().String(),
 		},
 	}
-	DefaultTtsService.TextToVoice(req)
+	res := &agentapi.TtsResponse{
+		Response: &common.BaseResponse{},
+	}
+	DefaultTtsService.TextToVoice(req, res)
 }

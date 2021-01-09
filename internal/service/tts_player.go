@@ -49,18 +49,15 @@ func (p *AudioPlayer) Close() {
 func (p *AudioPlayer) playCoroutine() {
 	var err error
 	for {
-		select {
-		case a := <-p.c:
-			log.Info().Msgf("start play %s", a.Title)
-			err = p.play(a)
-			if err != nil {
-				log.Error().Msgf("play audio %s err: %+v", a.Title, err)
-			}
-			log.Info().Msgf("end play %s", a.Title)
+		a := <-p.c
+		log.Info().Msgf("start play %s", a.Title)
+		err = p.play(a)
+		if err != nil {
+			log.Error().Msgf("play audio %s err: %+v", a.Title, err)
 		}
+		log.Info().Msgf("end play %s", a.Title)
 	}
 }
-
 
 func (p *AudioPlayer) Enqueue(a Audio) {
 	p.c <- a
