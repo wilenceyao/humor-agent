@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"github.com/rs/zerolog/log"
 	"github.com/wilenceyao/humor-agent/internal/defination"
+	agentapi "github.com/wilenceyao/humor-api/agent/humor"
+	"github.com/wilenceyao/humor-api/common"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -261,4 +263,42 @@ func (s *WeatherService) getStationIDByCity(city string) (*WeatherStation, error
 		return nil, err
 	}
 	return resObj.Result, nil
+}
+
+func (s *WeatherService) LocalWeather(req *agentapi.WeatherRequest, res *agentapi.WeatherResponse) {
+	log.Info().Msg("localWeather start")
+	loc, err := DefaultLocationService.GetMyLocation()
+	if err != nil {
+		log.Error().Msgf("GetMyLocation err: %+v", err)
+		res.Response.Code = common.ErrorCode_EXTERNAL_ERROR
+		res.Response.Msg = "GetMyLocation err"
+		return
+	}
+	log.Info().Msgf("loc: %+v", loc)
+	weather, err := DefaultWeatherService.GetWeatherByCity(loc.City)
+	if err != nil {
+		log.Error().Msgf("GetWeatherByCity err: %+v", err)
+		res.Response.Code = common.ErrorCode_EXTERNAL_ERROR
+		res.Response.Msg = "GetWeatherByCity err"
+		return
+	}
+	log.Info().Msgf("weather: %+v", weather)
+	buf := make([]byte, 0, 16)
+	buf = append(buf, weather.City.Secondaryname...)
+	buf = append(buf, ","...)
+	buf = append(buf, weather.Condition.Condition...)
+	buf = append(buf, ","...)
+	buf = append(buf, weather.Condition.Tips...)
+	buf = append(buf, weather.Sfc.Notice...)
+	ttsReq := &agentapi.TtsRequest{
+		Text: string(buf),
+		Request: &common.BaseRequest{
+			RequestID: req.Request.RequestID,
+		},
+	}
+	ttsRes := &agentapi.TtsResponse{
+		Response: &common.BaseResponse{},
+	}
+	go DefaultTtsService.TextToVoice(ttsReq, ttsRes)
+	res.Response = ttsRes.Response
 }

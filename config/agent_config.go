@@ -52,6 +52,5 @@ func Init(path string) error {
 		log.Error().Msgf("decode config file err: %+v", err)
 		return err
 	}
-	log.Info().Msgf("config init finished")
 	return nil
 }

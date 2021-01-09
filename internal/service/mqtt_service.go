@@ -34,6 +34,8 @@ func InitMqttService() error {
 	}
 	h.Servant.RegisterFun(int32(agentapi.Action_TTS), agentapi.TtsRequest{}, agentapi.TtsResponse{},
 		DefaultMqttService.tts)
+	h.Servant.RegisterFun(int32(agentapi.Action_WEATHER), agentapi.WeatherRequest{}, agentapi.WeatherResponse{},
+		DefaultMqttService.weather)
 
 	return nil
 }
@@ -43,4 +45,11 @@ func (s *MqttService) tts(ctx context.Context, reqObj interface{}, resObj interf
 	res := resObj.(*agentapi.TtsResponse)
 	res.Response = &common.BaseResponse{}
 	DefaultTtsService.TextToVoice(req, res)
+}
+
+func (s *MqttService) weather(ctx context.Context, reqObj interface{}, resObj interface{}) {
+	req := reqObj.(*agentapi.WeatherRequest)
+	res := resObj.(*agentapi.WeatherResponse)
+	res.Response = &common.BaseResponse{}
+	DefaultWeatherService.LocalWeather(req, res)
 }
