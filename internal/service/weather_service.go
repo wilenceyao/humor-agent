@@ -10,6 +10,7 @@ import (
 	"github.com/wilenceyao/humor-api/common"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -20,7 +21,7 @@ var DefaultWeatherService *WeatherService = &WeatherService{}
 type WeatherService struct {
 }
 
-type WeatherLiveData struct {
+type WeatherLive1Data struct {
 	AqiForecast []struct {
 		Date        string `json:"date"`
 		PublishTime string `json:"publishTime"`
@@ -167,9 +168,9 @@ type LiveIndex struct {
 type WeatherLiveResponse struct {
 	Code   int64 `json:"code"`
 	Result struct {
-		Code int64            `json:"code"`
-		Data *WeatherLiveData `json:"data"`
-		Msg  string           `json:"msg"`
+		Code int64             `json:"code"`
+		Data *WeatherLive1Data `json:"data"`
+		Msg  string            `json:"msg"`
 		Rc   struct {
 			C int64  `json:"c"`
 			P string `json:"p"`
@@ -189,7 +190,55 @@ type StationResponse struct {
 	Result *WeatherStation `json:"result"`
 }
 
-func (s *WeatherService) GetWeatherByCity(city string) (*WeatherLiveData, error) {
+type WeatherLive0Response struct {
+	Code   int64 `json:"code"`
+	Result struct {
+		Ds            []*WeatherLive0Data `json:"DS"`
+		ColCount      string              `json:"colCount"`
+		FieldNames    string              `json:"fieldNames"`
+		FieldUnits    string              `json:"fieldUnits"`
+		RequestTime   string              `json:"requestTime"`
+		ResponseTime  string              `json:"responseTime"`
+		ReturnCode    int64               `json:"returnCode"`
+		ReturnMessage string              `json:"returnMessage"`
+		RowCount      string              `json:"rowCount"`
+		TakeTime      string              `json:"takeTime"`
+	} `json:"result"`
+}
+
+type WeatherLive0Data struct {
+	Datetime string `json:"DATETIME"`
+	// 纬度
+	Lat string `json:"LAT"`
+	// 经度
+	Lon string `json:"LON"`
+	// 12小时累计降水(10分钟)
+	PRE12H string `json:"PRE_12H"`
+	// 1小时累计降水(10分钟)
+	PRE1H string `json:"PRE_1H"`
+	// 24小时累计降水(10分钟)
+	PRE24H string `json:"PRE_24H"`
+	// 3小时累计降水(10分钟)
+	PRE3H string `json:"PRE_3H"`
+	// 6小时累计降水(10分钟)
+	PRE6H string `json:"PRE_6H"`
+	// 相对湿度
+	Rhu string `json:"RHU"`
+	// 总云量
+	Tcdc string `json:"TCDC"`
+	// 温度
+	Tem string `json:"TEM"`
+	// 能见度
+	Vis string `json:"VIS"`
+	// 天气现象
+	Wea string `json:"WEA"`
+	// 风向
+	Wind string `json:"WIND"`
+	// 风力
+	Wins string `json:"WINS"`
+}
+
+func (s *WeatherService) GetWeatherByCity(city string) (*WeatherLive0Data, error) {
 	log.Info().Msgf("GetWeatherByCity: %s", city)
 	// 深圳市 -> 深圳
 	index := strings.Index(city, "市")
@@ -204,7 +253,7 @@ func (s *WeatherService) GetWeatherByCity(city string) (*WeatherLiveData, error)
 	param := make(map[string]string)
 	param["lat"] = stat.V05001
 	param["lon"] = stat.V06001
-	param["type"] = "1"
+	param["type"] = "0"
 	paramBtArr, _ := json.Marshal(param)
 	req, _ := http.NewRequest("POST", "http://data.cma.cn/kbweb/home/live",
 		bytes.NewBuffer(paramBtArr))
@@ -219,7 +268,7 @@ func (s *WeatherService) GetWeatherByCity(city string) (*WeatherLiveData, error)
 	}
 	defer res.Body.Close()
 	btArr, _ := ioutil.ReadAll(res.Body)
-	resObj := &WeatherLiveResponse{}
+	resObj := &WeatherLive0Response{}
 	err = json.Unmarshal(btArr, resObj)
 	if err != nil {
 		log.Error().Msgf("unmarshal res err: %+v", err)
@@ -230,7 +279,12 @@ func (s *WeatherService) GetWeatherByCity(city string) (*WeatherLiveData, error)
 		log.Err(err)
 		return nil, err
 	}
-	return resObj.Result.Data, nil
+	if len(resObj.Result.Ds) == 0 {
+		err = fmt.Errorf("GetWeatherByCity data rs is empty")
+		log.Err(err)
+		return nil, err
+	}
+	return resObj.Result.Ds[0], nil
 }
 
 func (s *WeatherService) getStationIDByCity(city string) (*WeatherStation, error) {
@@ -283,15 +337,20 @@ func (s *WeatherService) LocalWeather(req *agentapi.WeatherRequest, res *agentap
 		return
 	}
 	log.Info().Msgf("weather: %+v", weather)
+	windDirection, err := strconv.Atoi(weather.Wind)
+	direction := s.getWindDirection(windDirection)
 	buf := make([]byte, 0, 16)
-	buf = append(buf, weather.City.Secondaryname...)
+	buf = append(buf, loc.City...)
 	buf = append(buf, ","...)
-	buf = append(buf, weather.Condition.Condition...)
-	buf = append(buf, ","...)
-	buf = append(buf, weather.Condition.Tips...)
-	buf = append(buf, weather.Sfc.Notice...)
+	buf = append(buf, fmt.Sprintf("当前气温%s度，", weather.Tem)...)
+	buf = append(buf, fmt.Sprintf("相对湿度百分之%s。", weather.Rhu)...)
+	buf = append(buf, fmt.Sprintf("风向%s风%s级，", direction, weather.Wins)...)
+	buf = append(buf, fmt.Sprintf("能见度%s米，", weather.Vis)...)
+	buf = append(buf, fmt.Sprintf("未来12小时预计降水量%s毫米。", weather.PRE12H)...)
+	text := string(buf)
+	log.Info().Msg(text)
 	ttsReq := &agentapi.TtsRequest{
-		Text: string(buf),
+		Text: text,
 		Request: &common.BaseRequest{
 			RequestID: req.Request.RequestID,
 		},
@@ -301,4 +360,26 @@ func (s *WeatherService) LocalWeather(req *agentapi.WeatherRequest, res *agentap
 	}
 	go DefaultTtsService.TextToVoice(ttsReq, ttsRes)
 	res.Response = ttsRes.Response
+}
+
+func (s *WeatherService) getWindDirection(windDirection int) string {
+	direction := ""
+	if windDirection == 0 {
+		direction = "北"
+	} else if windDirection > 0 && windDirection < 90 {
+		direction = "东北"
+	} else if windDirection == 90 {
+		direction = "东"
+	} else if windDirection > 90 && windDirection < 180 {
+		direction = "东南"
+	} else if windDirection == 180 {
+		direction = "南"
+	} else if windDirection > 180 && windDirection < 270 {
+		direction = "西南"
+	} else if windDirection == 270 {
+		direction = "西"
+	} else if windDirection > 270 {
+		direction = "西北"
+	}
+	return direction
 }
