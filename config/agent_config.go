@@ -24,6 +24,7 @@ type QCloudConfig struct {
 	SecretId  string
 	SecretKey string
 	TtsConfig QCloudTtsConfig
+	CosConfig QCloudCosConfig
 }
 
 type MqttConfig struct {
@@ -36,6 +37,12 @@ type MqttConfig struct {
 
 type QCloudTtsConfig struct {
 	VoiceType int64
+}
+
+type QCloudCosConfig struct {
+	Bucket string
+	Region string
+	PhotoDir string
 }
 
 func Init(path string) error {

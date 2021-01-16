@@ -27,6 +27,12 @@ func (a *HumorAgent) Start() error {
 		return err
 	}
 	service.InitTtsService()
+	err = service.InitCOSService()
+	if err != nil {
+		log.Error().Msgf("init cos client err: %+v", err)
+		return err
+	}
+	service.InitPhotoService()
 	err = service.InitMqttService()
 	if err != nil {
 		log.Error().Msgf("init mqtt client err: %+v", err)
